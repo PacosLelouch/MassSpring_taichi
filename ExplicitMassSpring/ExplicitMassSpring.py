@@ -51,6 +51,17 @@ maxvn2 = ti.var(ti.f32, shape=())
 def lerp(x, s, e): 
     return (1-x)*s+x*e
 
+@ti.func
+def initConstant():
+    #fix
+    fix2d[n_nodes_y-1] = 1
+    fix2d[n_nodes-1] = 1
+    
+    static[None] = 0
+    maxvn2[None] = 0.0
+    
+    gAcc[None] = [0.0, -g]
+
 @ti.kernel
 def init():
     for idx in ti.static(range(n_nodes)):
@@ -67,14 +78,8 @@ def init():
         #f2dNext[idx] = [0, 0]
         fix2d[idx] = 0
         #print(idx)
-    #fix
-    fix2d[n_nodes_y-1] = 1
-    fix2d[n_nodes-1] = 1
     
-    static[None] = 0
-    maxvn2[None] = 0.0
-    
-    gAcc[None] = [0.0, -g]
+    initConstant()
 
     for idx, idx2 in connMat:
         length = (x02d[idx] - x02d[idx2]).norm()
@@ -106,7 +111,7 @@ def init():
             
 @ti.kernel
 def initRunning():
-    for idx in ti.static(range(n_nodes)):
+    for idx in range(n_nodes):
         i = idx // n_nodes_y
         j = idx - i *  n_nodes_y
         x = i / (n_nodes_x - 1)
@@ -120,12 +125,7 @@ def initRunning():
         #f2dNext[idx] = [0, 0]
         fix2d[idx] = 0
         #print(idx)
-    #fix
-    fix2d[n_nodes_y-1] = 1
-    fix2d[n_nodes-1] = 1
-    
-    static[None] = 0
-    maxvn2[None] = 0.0
+    initConstant()
 
 @ti.func
 def calElasticForce(taridx, srcidx, k):
@@ -155,7 +155,7 @@ def calTotalForce():
 
 @ti.kernel
 def integrate(): #Symplectic Euler Integration
-    for i in ti.static(range(n_nodes)):
+    for i in range(n_nodes):
         if fix2d[i] == 0:
             v2d[i] = v2d[i] + dt*node_mass_inv*f2d[i]
             # Collide with ground
